@@ -209,7 +209,7 @@ def queue(users, label, extra_context=None, sender=None):
     if isinstance(users, QuerySet):
         users = [(ContentType.objects.get_for_model(row), row['pk']) for row in users.values("pk")]
     else:
-        users = [(ContentType.objects.get_for_model(user), user.id) for user in users]
+        users = [(ContentType.objects.get_for_model(user), user.pk) for user in users]
     notices = []
     for user in users:
         notices.append((user, label, extra_context, sender))
