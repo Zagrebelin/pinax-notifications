@@ -16,29 +16,32 @@ from .models import NoticeQueueBatch
 from .signals import emitted_notices
 
 
+logger = logging.getLogger('pinax.engine')
+
+
 def acquire_lock(*args):
     if len(args) == 1:
         lock = FileLock(args[0])
     else:
         lock = FileLock("send_notices")
 
-    logging.debug("acquiring lock...")
+    logger.debug("acquiring lock...")
     try:
         lock.acquire(settings.PINAX_NOTIFICATIONS_LOCK_WAIT_TIMEOUT)
     except AlreadyLocked:
-        logging.debug("lock already in place. quitting.")
+        logger.debug("lock already in place. quitting.")
         return
     except LockTimeout:
-        logging.debug("waiting for the lock timed out. quitting.")
+        logger.debug("waiting for the lock timed out. quitting.")
         return
-    logging.debug("acquired.")
+    logger.debug("acquired.")
     return lock
 
 
 def send_all(*args):
     lock = acquire_lock(*args)
     if lock is None:
-        logging.debug("no lock acquired. skipping sending.")
+        logger.debug("no lock acquired. skipping sending.")
         return
     batches, sent, sent_actual = 0, 0, 0
     start_time = time.time()
@@ -49,14 +52,14 @@ def send_all(*args):
             for (ct, ct_id), label, extra_context, sender in notices:
                 try:
                     user = ct.get_object_for_this_type(pk=ct_id)
-                    logging.info("emitting notice {0} to {1}".format(label, user))
-                    # call this once per user to be atomic and allow for logging to
+                    logger.info("emitting notice {0} to {1}".format(label, user))
+                    # call this once per user to be atomic and allow for logger.to
                     # accurately show how long each takes.
                     if notification.send_now([user], label, extra_context, sender):
                         sent_actual += 1
                 except get_user_model().DoesNotExist:
                     # Ignore deleted users, just warn about them
-                    logging.warning(
+                    logger.warning(
                         "not emitting notice {0} to user {1} since it does not exist".format(
                             label,
                             user)
@@ -82,12 +85,12 @@ def send_all(*args):
         )
         mail_admins(subject, message, fail_silently=True)
         # log it as critical
-        logging.critical("an exception occurred: {0}".format(e))
+        logger.critical("an exception occurred: {0}".format(e))
     finally:
-        logging.debug("releasing lock...")
+        logger.debug("releasing lock...")
         lock.release()
-        logging.debug("released.")
+        logger.debug("released.")
 
-    logging.info("")
-    logging.info("{0} batches, {1} sent".format(batches, sent,))
-    logging.info("done in {0:.2f} seconds".format(time.time() - start_time))
+    logger.info("")
+    logger.info("{0} batches, {1} sent".format(batches, sent,))
+    logger.info("done in {0:.2f} seconds".format(time.time() - start_time))
