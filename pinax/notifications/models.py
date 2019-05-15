@@ -169,8 +169,7 @@ def send_now(users, label, extra_context=None, sender=None, scoping=None):
 
         for backend in settings.PINAX_NOTIFICATIONS_BACKENDS.values():
             if backend.can_send(user, notice_type, scoping=scoping):
-                backend.deliver(user, sender, notice_type, extra_context)
-                sent = True
+                sent = backend.deliver(user, sender, notice_type, extra_context) or sent
 
     # reset environment to original language
     activate(current_language)
@@ -206,10 +205,7 @@ def queue(users, label, extra_context=None, sender=None):
     """
     if extra_context is None:
         extra_context = {}
-    if isinstance(users, QuerySet):
-        users = [(ContentType.objects.get_for_model(row), row['pk']) for row in users.values("pk")]
-    else:
-        users = [(ContentType.objects.get_for_model(user), user.pk) for user in users]
+    users = [(ContentType.objects.get_for_model(user), user.pk) for user in users]
     notices = []
     for user in users:
         notices.append((user, label, extra_context, sender))

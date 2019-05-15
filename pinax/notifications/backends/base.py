@@ -24,6 +24,7 @@ class BaseBackend(object):
     def deliver(self, recipient, sender, notice_type, extra_context):
         """
         Deliver a notification to the given recipient.
+        Return True if delivered successful.
         """
         raise NotImplementedError()
 
