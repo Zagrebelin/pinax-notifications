@@ -1,7 +1,10 @@
+import datetime
+
 from django.contrib.auth import get_user_model
 from django.core import mail, management
 from django.test import TestCase
 from django.test.utils import override_settings
+from django.utils import timezone
 
 from ..models import NoticeType, queue
 
@@ -20,3 +23,20 @@ class TestManagementCmd(TestCase):
         self.assertEqual(len(mail.outbox), 2)
         self.assertIn(self.user.email, mail.outbox[0].to)
         self.assertIn(self.user2.email, mail.outbox[1].to)
+
+    def test_emit_expired(self):
+        users = [self.user, self.user2]
+        till = timezone.now() - datetime.timedelta(hours=1)
+        queue(users, 'label', send_till=till)
+        management.call_command('emit_notices')
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_emit_not_expired(self):
+        users = [self.user, self.user2]
+        till = timezone.now() + datetime.timedelta(hours=1)
+        queue(users, 'label', send_till=till)
+        management.call_command('emit_notices')
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertIn(self.user.email, mail.outbox[0].to)
+        self.assertIn(self.user2.email, mail.outbox[1].to)
+

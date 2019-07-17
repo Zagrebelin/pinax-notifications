@@ -7,6 +7,8 @@ import traceback
 from django.contrib.auth import get_user_model
 from django.contrib.sites.models import Site
 from django.core.mail import mail_admins
+from django.db.models import Q
+from django.utils import timezone
 from django.utils.six.moves import cPickle as pickle  # pylint: disable-msg=F
 
 from . import models as notification
@@ -45,9 +47,10 @@ def send_all(*args):
         return
     batches, sent, sent_actual = 0, 0, 0
     start_time = time.time()
+    now = timezone.now()
 
     try:
-        for queued_batch in NoticeQueueBatch.objects.all():
+        for queued_batch in NoticeQueueBatch.objects.filter(Q(send_till__isnull=True) | Q(send_till__gt=now)).all():
             was_sent = False
             notices = pickle.loads(base64.b64decode(queued_batch.pickled_data))
             for (ct, ct_id), label, extra_context, sender in notices:
@@ -94,6 +97,7 @@ def send_all(*args):
         lock.release()
         logger.debug("released.")
 
+    expired = NoticeQueueBatch.objects.filter(send_till__lt=now).delete()
     logger.info("")
-    logger.info("{0} batches, {1} sent".format(batches, sent,))
+    logger.info("{0} batches, {1} sent, {2} expired".format(batches, sent, expired))
     logger.info("done in {0:.2f} seconds".format(time.time() - start_time))
