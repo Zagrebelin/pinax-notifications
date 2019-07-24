@@ -1,3 +1,4 @@
+import os
 import datetime
 
 from django.contrib.auth import get_user_model
@@ -39,4 +40,25 @@ class TestManagementCmd(TestCase):
         self.assertEqual(len(mail.outbox), 2)
         self.assertIn(self.user.email, mail.outbox[0].to)
         self.assertIn(self.user2.email, mail.outbox[1].to)
+
+    def test_emit_broken_queue(self):
+        """
+        Try to send message to 2 users.
+        Fail in template rendering on the first recipient, but send message to second one.
+        :return:
+        """
+        template_filename = 'pinax/notifications/templates/pinax/notifications/short.txt'
+        os.makedirs('pinax/notifications/templates/pinax/notifications', exist_ok=True)
+        with open(template_filename, 'w') as f:
+            print('''{% if recipient.username == 'test_user' %}
+    {% for _ in recipient.id %} {% endfor %}
+{% else %}
+    {{ recipient.username }}
+{% endif %}''', file=f)
+        queue([self.user], 'label')
+        queue([self.user2], 'label')
+        management.call_command('emit_notices')
+        os.unlink(template_filename)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(self.user2.email, mail.outbox[0].to)
 

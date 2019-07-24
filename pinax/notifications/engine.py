@@ -69,6 +69,10 @@ def send_all(*args):
                             label,
                             user)
                     )
+                except Exception as e:
+                    logger.exception(
+                        'not emitting notice {0} to user {1}: {2}', label, user, e
+                    )
                 sent += 1
             if was_sent:
                 queued_batch.delete()
