@@ -62,3 +62,9 @@ class TestManagementCmd(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(self.user2.email, mail.outbox[0].to)
 
+    def test_emit_too_early(self):
+        users = [self.user, self.user2]
+        after = timezone.now() + datetime.timedelta(hours=1)
+        queue(users, 'label', send_after=after)
+        management.call_command('emit_notices')
+        self.assertEqual(len(mail.outbox), 0)

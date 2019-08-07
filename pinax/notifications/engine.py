@@ -50,7 +50,10 @@ def send_all(*args):
     now = timezone.now()
 
     try:
-        for queued_batch in NoticeQueueBatch.objects.filter(Q(send_till__isnull=True) | Q(send_till__gt=now)).all():
+        for queued_batch in NoticeQueueBatch.objects\
+                .filter(Q(send_till__isnull=True) | Q(send_till__gt=now))\
+                .filter(Q(send_after__isnull=True) | Q(send_after__lte=now))\
+                .all():
             was_sent = False
             notices = pickle.loads(base64.b64decode(queued_batch.pickled_data))
             for (ct, ct_id), label, extra_context, sender in notices:

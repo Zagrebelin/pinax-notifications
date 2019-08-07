@@ -118,6 +118,7 @@ class NoticeQueueBatch(models.Model):
     """
     pickled_data = models.TextField()
     send_till = models.DateTimeField(null=True, blank=True, default=None)
+    send_after = models.DateTimeField(null=True, blank=True, default=None)
 
 
 def get_notification_language(user):
@@ -198,7 +199,7 @@ def send(*args, **kwargs):
             return send_now(*args, **kwargs)
 
 
-def queue(users, label, extra_context=None, sender=None, send_till=None):
+def queue(users, label, extra_context=None, sender=None, send_till=None, send_after=None):
     """
     Queue the notification in NoticeQueueBatch. This allows for large amounts
     of user notifications to be deferred to a seperate process running outside
@@ -213,4 +214,4 @@ def queue(users, label, extra_context=None, sender=None, send_till=None):
     # After b64 encoding, bytestring must be converted to string via `decode()`
     # for use in Django 2.0+ TextField.
     pickled_data = base64.b64encode(pickle.dumps(notices)).decode()
-    NoticeQueueBatch(pickled_data=pickled_data, send_till=send_till).save()
+    NoticeQueueBatch(pickled_data=pickled_data, send_till=send_till, send_after=send_after).save()
