@@ -13,7 +13,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import activate, get_language
 
 try:
-    from prometheus_client.metrics import Counter
+    from prometheus_client.metrics import Counter, Gauge
 except ImportError:
     class Counter:
         class Label:
@@ -26,6 +26,14 @@ except ImportError:
         def labels(self, *args):
             return self._labels
 
+
+    class Gauge:
+        def __init__(self, *args):
+            pass
+
+        def set_function(self, *args):
+            pass
+
 from .conf import settings
 from .hooks import hookset
 from .utils import load_media_defaults
@@ -36,12 +44,14 @@ NOTICE_MEDIA, NOTICE_MEDIA_DEFAULTS = load_media_defaults()
 class LanguageStoreNotAvailable(Exception):
     pass
 
+
 deliver_counter = Counter('notifications_deliver', 'Number of delivered notifications', ['backend'])
+batched_queue_count = Gauge('notifications_queue', 'Count of batched notifications')
+batched_queue_count.set_function(lambda: NoticeQueueBatch.objects.count())
 
 
 @python_2_unicode_compatible
 class NoticeType(models.Model):
-
     label = models.CharField(_("label"), max_length=40)
     display = models.CharField(_("display"), max_length=50)
     description = models.CharField(_("description"), max_length=100)

@@ -123,10 +123,26 @@ class TestProcedures(BaseTest):
 
     @override_settings(SITE_ID=1)
     def test_queue_queryset(self):
+        def get_prometheus_queue():
+            try:
+                import prometheus_client
+                for metric in prometheus_client.REGISTRY.collect():
+                    if metric.name != 'notifications_queue':
+                        continue
+                    sample = metric.samples[0]
+                    return sample.value
+            except ImportError:
+                return None
+
+        before = get_prometheus_queue()
         users = get_user_model().objects.all()
         queue(users, "label")
         self.assertEqual(len(mail.outbox), 0)
         self.assertEqual(NoticeQueueBatch.objects.count(), 1)
+        after = get_prometheus_queue()
+        if before is not None and after is not None:
+            self.assertEqual(after-before, 1)
+
 
     @override_settings(SITE_ID=1, PINAX_NOTIFICATIONS_LANGUAGE_MODEL="tests.Language")
     def test_send_prometheus(self):
