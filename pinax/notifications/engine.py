@@ -67,15 +67,10 @@ def send_all(*args):
                         was_sent = True
                 except get_user_model().DoesNotExist:
                     # Ignore deleted users, just warn about them
-                    logger.warning(
-                        "not emitting notice {0} to user {1} since it does not exist".format(
-                            label,
-                            user)
-                    )
+                    logger.warning("not emitting notice %s to user [%s id=%d] since it does not exist",
+                        label, ct, ct_id)
                 except Exception as e:
-                    logger.exception(
-                        'not emitting notice {0} to user {1}: {2}', label, user, e
-                    )
+                    logger.exception('not emitting notice %s: %s', label, e)
                 sent += 1
             if was_sent:
                 queued_batch.delete()
@@ -104,7 +99,7 @@ def send_all(*args):
         lock.release()
         logger.debug("released.")
 
-    expired = NoticeQueueBatch.objects.filter(send_till__lt=now).delete()
-    logger.info("")
+    _, expired = NoticeQueueBatch.objects.filter(send_till__lt=now).delete()
+    expired = expired['pinax_notifications.NoticeQueueBatch']
     logger.info("{0} batches, {1} sent, {2} expired".format(batches, sent, expired))
     logger.info("done in {0:.2f} seconds".format(time.time() - start_time))

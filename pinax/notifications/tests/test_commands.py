@@ -68,3 +68,13 @@ class TestManagementCmd(TestCase):
         queue(users, 'label', send_after=after)
         management.call_command('emit_notices')
         self.assertEqual(len(mail.outbox), 0)
+
+    @override_settings(SITE_ID=1)
+    def test_emit_removed_user(self):
+        # default behaviout, send_now
+        users = [self.user, self.user2]
+        queue(users, "label")
+        self.user.delete()
+        management.call_command('emit_notices')
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(self.user2.email, mail.outbox[0].to)

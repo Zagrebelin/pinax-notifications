@@ -39,13 +39,11 @@ class TestNoticeType(TestCase):
 
     def test_create(self):
         label = "friends_invite"
-        NoticeType.create(label, "Invitation Received", "you received an invitation", default=2,
-                          verbosity=2)
+        NoticeType.create(label, "Invitation Received", "you received an invitation", default=2)
         n = NoticeType.objects.get(label=label)
         self.assertEqual(str(n), label)
         # update
-        NoticeType.create(label, "Invitation for you", "you got an invitation", default=1,
-                          verbosity=2)
+        NoticeType.create(label, "Invitation for you", "you got an invitation", default=1)
         n = NoticeType.objects.get(pk=n.pk)
         self.assertEqual(n.display, "Invitation for you")
         self.assertEqual(n.description, "you got an invitation")

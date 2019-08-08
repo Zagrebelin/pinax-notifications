@@ -47,7 +47,30 @@ DEFAULT_SETTINGS = dict(
                 ],
             },
         },
-    ]
+    ],
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': True,
+        'formatters': {
+            'verbose': {
+                'format': '[{name}:{levelname}] [{module}.py:L{lineno}]: {message}',
+                'style': '{',
+            },
+        },
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'verbose',
+            }
+        },
+        'loggers': {
+            'pinax': {
+                'level': 'DEBUG',
+                'propagate': False,
+                'handlers': ['console'],
+            }
+        }
+    }
 )
 
 
