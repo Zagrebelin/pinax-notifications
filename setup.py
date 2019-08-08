@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-VERSION = "5.0.7"
+VERSION = "5.0.8"
 LONG_DESCRIPTION = """
 .. image:: http://pinaxproject.com/pinax-design/patches/pinax-notifications.svg
     :target: https://pypi.python.org/pypi/pinax-notifications/
@@ -100,6 +100,7 @@ setup(
     ],
     tests_require=[
         "pinax-templates>=1.0.0",
+        'prometheus-client>=0.7.1'
     ],
     test_suite="runtests.runtests",
     zip_safe=False

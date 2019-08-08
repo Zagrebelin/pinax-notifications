@@ -12,6 +12,20 @@ from django.utils.six.moves import cPickle as pickle  # pylint: disable-msg=F
 from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import activate, get_language
 
+try:
+    from prometheus_client.metrics import Counter
+except ImportError:
+    class Counter:
+        class Label:
+            def inc(self):
+                pass
+
+        def __init__(self, *args):
+            self._labels = Counter.Label()
+
+        def labels(self, *args):
+            return self._labels
+
 from .conf import settings
 from .hooks import hookset
 from .utils import load_media_defaults
@@ -21,6 +35,8 @@ NOTICE_MEDIA, NOTICE_MEDIA_DEFAULTS = load_media_defaults()
 
 class LanguageStoreNotAvailable(Exception):
     pass
+
+deliver_counter = Counter('notifications_deliver', 'Number of delivered notifications', ['backend'])
 
 
 @python_2_unicode_compatible
@@ -172,6 +188,8 @@ def send_now(users, label, extra_context=None, sender=None, scoping=None):
         for backend in settings.PINAX_NOTIFICATIONS_BACKENDS.values():
             if backend.can_send(user, notice_type, scoping=scoping):
                 sent = backend.deliver(user, sender, notice_type, extra_context) or sent
+                if sent:
+                    deliver_counter.labels(backend.__class__.__name__).inc()
 
     # reset environment to original language
     activate(current_language)

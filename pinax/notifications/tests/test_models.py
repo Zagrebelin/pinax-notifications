@@ -129,3 +129,27 @@ class TestProcedures(BaseTest):
         queue(users, "label")
         self.assertEqual(len(mail.outbox), 0)
         self.assertEqual(NoticeQueueBatch.objects.count(), 1)
+
+    @override_settings(SITE_ID=1, PINAX_NOTIFICATIONS_LANGUAGE_MODEL="tests.Language")
+    def test_send_prometheus(self):
+        try:
+            import prometheus_client
+            def get_prometheus_counters():
+                ret = {}
+                for metric in prometheus_client.REGISTRY.collect():
+                    if metric.name != 'notifications_deliver':
+                        continue
+                    for sample in metric.samples:
+                        if sample.name.endswith('_total'):
+                            ret[sample.labels['backend']] = sample.value
+                return ret
+
+            before = get_prometheus_counters()
+            Site.objects.create(domain="localhost", name="localhost")
+            users = [self.user, self.user2]
+            send_now(users, "label")
+            after = get_prometheus_counters()
+            self.assertIn('EmailBackend', after)
+            self.assertEqual(after['EmailBackend']-before.get('EmailBackend', 0), 2)
+        except ImportError:
+            pass
