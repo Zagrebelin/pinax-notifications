@@ -10,5 +10,5 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         logging.basicConfig(level=logging.DEBUG, format="%(message)s")
-        logging.info("-" * 72)
+        logging.getLogger('pinax').info("-" * 72)
         send_all(*args)

@@ -49,6 +49,8 @@ class TestManagementCmd(TestCase):
         """
         template_filename = 'pinax/notifications/templates/pinax/notifications/short.txt'
         os.makedirs('pinax/notifications/templates/pinax/notifications', exist_ok=True)
+        import logging
+        logging.getLogger('pinax.engine').info('It is ok to have exception below:')
         with open(template_filename, 'w') as f:
             print('''{% if recipient.username == 'test_user' %}
     {% for _ in recipient.id %} {% endfor %}
@@ -58,6 +60,7 @@ class TestManagementCmd(TestCase):
         queue([self.user], 'label')
         queue([self.user2], 'label')
         management.call_command('emit_notices')
+        logging.getLogger('pinax.engine').info('It is ok to have exception above')
         os.unlink(template_filename)
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(self.user2.email, mail.outbox[0].to)
