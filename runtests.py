@@ -92,6 +92,25 @@ def runtests(*test_args):
         runner_class = DjangoTestSuiteRunner
         test_args = ["tests"]
 
+    try:
+        import prometheus_redis_client
+        class Pipeline():
+            def sadd(self, *args, **kwargs):
+                pass
+            def incrby(self, *args, **kwargs):
+                pass
+            def set(self, *args, **kwargs):
+                pass
+            def execute(self, *args, **kwargs):
+                return [0, 1]
+
+        class Redis:
+            def pipeline(self):
+                return Pipeline()
+        prometheus_redis_client.REGISTRY.set_redis(Redis())
+    except ImportError:
+        pass
+
     failures = runner_class(verbosity=1, interactive=True, failfast=False).run_tests(test_args)
     sys.exit(failures)
 

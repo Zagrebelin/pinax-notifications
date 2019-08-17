@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-VERSION = "5.0.10"
+VERSION = "5.1.0"
 LONG_DESCRIPTION = """
 .. image:: http://pinaxproject.com/pinax-design/patches/pinax-notifications.svg
     :target: https://pypi.python.org/pypi/pinax-notifications/
@@ -47,6 +47,7 @@ Features
 * Notification messages via email (configurable by user)
 * Ability to supply your own backend notification channels
 * Ability to scope notifications at the site level
+* Prometheus support (via either prometheus-client or prometheus_redis_client)
 
 Supported Django and Python Versions
 ------------------------------------
@@ -95,12 +96,11 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     install_requires=[
-        "django>=1.11",
+        "django>=2.0",
         "django-appconf>=1.0.1",
     ],
     tests_require=[
         "pinax-templates>=1.0.0",
-        'prometheus-client>=0.7.1'
     ],
     test_suite="runtests.runtests",
     zip_safe=False

@@ -1,6 +1,7 @@
 from __future__ import print_function, unicode_literals
 
 import base64
+import time
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -15,23 +16,25 @@ from django.utils.translation import activate, get_language
 try:
     from prometheus_client.metrics import Counter, Gauge
 except ImportError:
-    class Counter:
-        class Label:
-            def inc(self):
+    try:
+        from prometheus_redis_client.metrics import Counter, CommonGauge as Gauge
+    except ImportError:
+        class Counter:
+            class Label:
+                def inc(self):
+                    pass
+                def set(self, *args):
+                    pass
+
+            def __init__(self, *args):
+                self._labels = Counter.Label()
+
+            def labels(self, *args):
+                return self._labels
+
+        class Gauge(Counter):
+            def set_function(self, *args):
                 pass
-
-            def set_to_current_time(self):
-                pass
-
-        def __init__(self):
-            self._labels = Counter.Label()
-
-        def labels(self, *args):
-            return self._labels
-
-    class Gauge(Counter):
-        def set_function(self, *args):
-            pass
 
 from .conf import settings
 from .hooks import hookset
@@ -46,8 +49,6 @@ class LanguageStoreNotAvailable(Exception):
 
 deliver_counter = Counter('notifications_deliver', 'Number of delivered notifications', ['backend'])
 deliver_last_time = Gauge('notifications_last_time', 'Last time of success sending', ['backend'])
-batched_queue_count = Gauge('notifications_queue', 'Count of batched notifications')
-batched_queue_count.set_function(lambda: NoticeQueueBatch.objects.count())
 
 
 @python_2_unicode_compatible
@@ -200,7 +201,7 @@ def send_now(users, label, extra_context=None, sender=None, scoping=None):
                 sent = backend.deliver(user, sender, notice_type, extra_context) or sent
                 if sent:
                     deliver_counter.labels(backend.__class__.__name__).inc()
-                    deliver_last_time.labels(backend.__class__.__name__).set_to_current_time()
+                    deliver_last_time.labels(backend.__class__.__name__).set(time.time())
 
     # reset environment to original language
     activate(current_language)
