@@ -14,10 +14,10 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import activate, get_language
 
 try:
-    from prometheus_client.metrics import Counter, Gauge
+    from prometheus_redis_client.metrics import Counter, CommonGauge as Gauge
 except ImportError:
     try:
-        from prometheus_redis_client.metrics import Counter, CommonGauge as Gauge
+        from prometheus_client.metrics import Counter, Gauge
     except ImportError:
         class Counter:
             class Label:
@@ -33,8 +33,7 @@ except ImportError:
                 return self._labels
 
         class Gauge(Counter):
-            def set_function(self, *args):
-                pass
+            pass
 
 from .conf import settings
 from .hooks import hookset
