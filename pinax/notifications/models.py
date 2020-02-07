@@ -2,14 +2,13 @@ from __future__ import print_function, unicode_literals
 
 import base64
 import time
+import pickle
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.db.models.query import QuerySet
-from django.utils.encoding import python_2_unicode_compatible
-from django.utils.six.moves import cPickle as pickle  # pylint: disable-msg=F
 from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import activate, get_language
 
@@ -50,7 +49,6 @@ deliver_counter = Counter('notifications_deliver', 'Number of delivered notifica
 deliver_last_time = Gauge('notifications_last_time', 'Last time of success sending', ['backend'])
 
 
-@python_2_unicode_compatible
 class NoticeType(models.Model):
     label = models.CharField(_("label"), max_length=40)
     display = models.CharField(_("display"), max_length=50)

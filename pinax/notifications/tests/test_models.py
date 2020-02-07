@@ -1,11 +1,12 @@
 import base64
+import  pickle
 
 from django.contrib.auth import get_user_model
 from django.contrib.sites.models import Site
 from django.core import mail
 from django.test import TestCase
 from django.test.utils import override_settings
-from django.utils.six.moves import cPickle as pickle
+
 
 from . import get_backend_id
 from ..conf import settings

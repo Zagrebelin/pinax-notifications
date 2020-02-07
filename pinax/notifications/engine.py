@@ -1,4 +1,4 @@
-import base64
+import pickle
 import logging
 import sys
 import time
@@ -9,7 +9,6 @@ from django.contrib.sites.models import Site
 from django.core.mail import mail_admins
 from django.db.models import Q
 from django.utils import timezone
-from django.utils.six.moves import cPickle as pickle  # pylint: disable-msg=F
 
 from . import models as notification
 from .conf import settings
