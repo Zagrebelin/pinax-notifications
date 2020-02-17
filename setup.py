@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-VERSION = "5.1.1"
+VERSION = "5.1.2"
 LONG_DESCRIPTION = """
 .. image:: http://pinaxproject.com/pinax-design/patches/pinax-notifications.svg
     :target: https://pypi.python.org/pypi/pinax-notifications/
@@ -72,10 +72,7 @@ setup(
     license="MIT",
     packages=find_packages(),
     package_data={
-        "pinax.notifications": [
-            "locale/**/**/*",
-            "templates/pinax/notifications/*"
-        ]
+        "pinax.notifications": ["locale/**/**/*", "templates/pinax/notifications/*"]
     },
     classifiers=[
         "Development Status :: 5 - Production/Stable",
@@ -95,13 +92,8 @@ setup(
         'Programming Language :: Python :: 3.6',
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    install_requires=[
-        "django>=2.0",
-        "django-appconf>=1.0.1",
-    ],
-    tests_require=[
-        "pinax-templates>=1.0.0",
-    ],
+    install_requires=["django>=2.0", "django-appconf>=1.0.1",],
+    tests_require=["pinax-templates>=1.0.0",],
     test_suite="runtests.runtests",
-    zip_safe=False
+    zip_safe=False,
 )
