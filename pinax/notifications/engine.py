@@ -1,3 +1,4 @@
+import base64
 import pickle
 import logging
 import sys
@@ -49,10 +50,13 @@ def send_all(*args):
     now = timezone.now()
 
     try:
-        for queued_batch in NoticeQueueBatch.objects\
-                .filter(Q(send_till__isnull=True) | Q(send_till__gt=now))\
-                .filter(Q(send_after__isnull=True) | Q(send_after__lte=now))\
-                .all():
+        for queued_batch in (
+            NoticeQueueBatch.objects.filter(
+                Q(send_till__isnull=True) | Q(send_till__gt=now)
+            )
+            .filter(Q(send_after__isnull=True) | Q(send_after__lte=now))
+            .all()
+        ):
             was_sent = False
             notices = pickle.loads(base64.b64decode(queued_batch.pickled_data))
             for (ct, ct_id), label, extra_context, sender in notices:
@@ -66,8 +70,12 @@ def send_all(*args):
                         was_sent = True
                 except get_user_model().DoesNotExist:
                     # Ignore deleted users, just warn about them
-                    logger.warning("not emitting notice %s to user [%s id=%d] since it does not exist",
-                        label, ct, ct_id)
+                    logger.warning(
+                        "not emitting notice %s to user [%s id=%d] since it does not exist",
+                        label,
+                        ct,
+                        ct_id,
+                    )
                 except Exception as e:
                     logger.exception('not emitting notice %s: %s', label, e)
                 sent += 1
@@ -79,7 +87,7 @@ def send_all(*args):
             batches=batches,
             sent=sent,
             sent_actual=sent_actual,
-            run_time="%.2f seconds" % (time.time() - start_time)
+            run_time="%.2f seconds" % (time.time() - start_time),
         )
     except Exception:  # pylint: disable-msg=W0703
         # get the exception
