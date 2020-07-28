@@ -18,10 +18,12 @@ except ImportError:
     try:
         from prometheus_client.metrics import Counter, Gauge
     except ImportError:
+
         class Counter:
             class Label:
                 def inc(self):
                     pass
+
                 def set(self, *args):
                     pass
 
@@ -34,6 +36,7 @@ except ImportError:
         class Gauge(Counter):
             pass
 
+
 from .conf import settings
 from .hooks import hookset
 from .utils import load_media_defaults
@@ -45,8 +48,15 @@ class LanguageStoreNotAvailable(Exception):
     pass
 
 
-deliver_counter = Counter('notifications_deliver', 'Number of delivered notifications', ['backend'])
-deliver_last_time = Gauge('notifications_last_time', 'Last time of success sending', ['backend'])
+deliver_counter = Counter(
+    'notifications_deliver', 'Number of delivered notifications', ['backend']
+)
+deliver_error_counter = Counter(
+    'notifications_deliver', 'Number of delivered notifications', ['backend']
+)
+deliver_last_time = Gauge(
+    'notifications_last_time', 'Last time of success sending', ['backend']
+)
 
 
 class NoticeType(models.Model):
@@ -88,7 +98,9 @@ class NoticeType(models.Model):
                 if verbosity > 1:
                     print("Updated %s NoticeType" % label)
         except cls.DoesNotExist:
-            cls(label=label, display=display, description=description, default=default).save()
+            cls(
+                label=label, display=display, description=description, default=default
+            ).save()
             if verbosity > 1:
                 print("Created %s NoticeType" % label)
 
@@ -100,22 +112,15 @@ class NoticeSetting(models.Model):
     """
 
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        verbose_name=_("user"),
-        on_delete=models.CASCADE
+        settings.AUTH_USER_MODEL, verbose_name=_("user"), on_delete=models.CASCADE
     )
     notice_type = models.ForeignKey(
-        NoticeType,
-        verbose_name=_("notice type"),
-        on_delete=models.CASCADE
+        NoticeType, verbose_name=_("notice type"), on_delete=models.CASCADE
     )
     medium = models.CharField(_("medium"), max_length=1, choices=NOTICE_MEDIA)
     send = models.BooleanField(_("send"), default=False)
     scoping_content_type = models.ForeignKey(
-        ContentType,
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL
+        ContentType, null=True, blank=True, on_delete=models.SET_NULL
     )
     scoping_object_id = models.PositiveIntegerField(null=True, blank=True)
     scoping = GenericForeignKey("scoping_content_type", "scoping_object_id")
@@ -132,7 +137,13 @@ class NoticeSetting(models.Model):
     class Meta:
         verbose_name = _("notice setting")
         verbose_name_plural = _("notice settings")
-        unique_together = ("user", "notice_type", "medium", "scoping_content_type", "scoping_object_id")
+        unique_together = (
+            "user",
+            "notice_type",
+            "medium",
+            "scoping_content_type",
+            "scoping_object_id",
+        )
 
 
 class NoticeQueueBatch(models.Model):
@@ -140,6 +151,7 @@ class NoticeQueueBatch(models.Model):
     A queued notice.
     Denormalized data for a notice.
     """
+
     pickled_data = models.TextField()
     send_till = models.DateTimeField(null=True, blank=True, default=None)
     send_after = models.DateTimeField(null=True, blank=True, default=None)
@@ -198,7 +210,11 @@ def send_now(users, label, extra_context=None, sender=None, scoping=None):
                 sent = backend.deliver(user, sender, notice_type, extra_context) or sent
                 if sent:
                     deliver_counter.labels(backend.__class__.__name__).inc()
-                    deliver_last_time.labels(backend.__class__.__name__).set(time.time())
+                    deliver_last_time.labels(backend.__class__.__name__).set(
+                        time.time()
+                    )
+                else:
+                    deliver_error_counter.labels(backend.__class__.__name__).inc()
 
     # reset environment to original language
     activate(current_language)
@@ -226,7 +242,9 @@ def send(*args, **kwargs):
             return send_now(*args, **kwargs)
 
 
-def queue(users, label, extra_context=None, sender=None, send_till=None, send_after=None):
+def queue(
+    users, label, extra_context=None, sender=None, send_till=None, send_after=None
+):
     """
     Queue the notification in NoticeQueueBatch. This allows for large amounts
     of user notifications to be deferred to a seperate process running outside
@@ -241,4 +259,6 @@ def queue(users, label, extra_context=None, sender=None, send_till=None, send_af
     # After b64 encoding, bytestring must be converted to string via `decode()`
     # for use in Django 2.0+ TextField.
     pickled_data = base64.b64encode(pickle.dumps(notices)).decode()
-    NoticeQueueBatch(pickled_data=pickled_data, send_till=send_till, send_after=send_after).save()
+    NoticeQueueBatch(
+        pickled_data=pickled_data, send_till=send_till, send_after=send_after
+    ).save()
