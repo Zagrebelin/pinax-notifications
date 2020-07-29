@@ -52,7 +52,7 @@ deliver_counter = Counter(
     'notifications_deliver', 'Number of delivered notifications', ['backend']
 )
 deliver_error_counter = Counter(
-    'notifications_deliver', 'Number of delivered notifications', ['backend']
+    'notifications_error_deliver', 'Number of delivered notifications', ['backend']
 )
 deliver_last_time = Gauge(
     'notifications_last_time', 'Last time of success sending', ['backend']
