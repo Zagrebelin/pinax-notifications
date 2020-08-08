@@ -3,6 +3,7 @@ from __future__ import print_function, unicode_literals
 import base64
 import time
 import pickle
+from collections.abc import Iterable
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -184,6 +185,10 @@ def send_now(users, label, extra_context=None, sender=None, scoping=None):
         "spam": "eggs",
         "foo": "bar",
     )
+
+    Нотис может быть отправлен нескольким юзерам несколькими бакэндами.
+    Он считается отправленным, если хотя бы один юзер хотябы в одном бакэнде получил этот нотис.
+
     """
     sent = False
     if extra_context is None:
@@ -207,14 +212,22 @@ def send_now(users, label, extra_context=None, sender=None, scoping=None):
 
         for backend in settings.PINAX_NOTIFICATIONS_BACKENDS.values():
             if backend.can_send(user, notice_type, scoping=scoping):
-                sent = backend.deliver(user, sender, notice_type, extra_context) or sent
-                if sent:
+                deliver_result = backend.deliver(
+                    user, sender, notice_type, extra_context
+                )
+                if isinstance(deliver_result, Iterable):
+                    this_backend_sent, this_backend_error = deliver_result
+                else:
+                    this_backend_sent = deliver_result
+                    this_backend_error = not deliver_result
+                if this_backend_sent:
                     deliver_counter.labels(backend.__class__.__name__).inc()
                     deliver_last_time.labels(backend.__class__.__name__).set(
                         time.time()
                     )
-                else:
+                if this_backend_error:
                     deliver_error_counter.labels(backend.__class__.__name__).inc()
+                sent = this_backend_sent or sent
 
     # reset environment to original language
     activate(current_language)
