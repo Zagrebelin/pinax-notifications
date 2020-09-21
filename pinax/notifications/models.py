@@ -221,12 +221,12 @@ def send_now(users, label, extra_context=None, sender=None, scoping=None):
                     this_backend_sent = deliver_result
                     this_backend_error = not deliver_result
                 if this_backend_sent:
-                    deliver_counter.labels(backend.__class__.__name__).inc()
-                    deliver_last_time.labels(backend.__class__.__name__).set(
+                    deliver_counter.labels(backend.get_prometheus_label()).inc()
+                    deliver_last_time.labels(backend.get_prometheus_label()).set(
                         time.time()
                     )
                 if this_backend_error:
-                    deliver_error_counter.labels(backend.__class__.__name__).inc()
+                    deliver_error_counter.labels(backend.get_prometheus_label()).inc()
                 sent = this_backend_sent or sent
 
     # reset environment to original language

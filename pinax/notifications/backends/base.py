@@ -50,3 +50,6 @@ class BaseBackend(object):
             "current_site": current_site,
             "base_url": base_url
         }
+
+    def get_prometheus_label(self):
+        return self.__class__.__name__
