@@ -201,7 +201,7 @@ def send_now(users, label, extra_context=None, sender=None, scoping=None):
     notice_type = NoticeType.objects.get(label=label)
 
     current_language = get_language()
-
+    unable_to_sent = True
     for user in users:
         # get user language for user from language store defined in
         # NOTIFICATION_LANGUAGE_MODULE setting
@@ -214,7 +214,6 @@ def send_now(users, label, extra_context=None, sender=None, scoping=None):
             # activate the user's language
             activate(language)
         # если ни один бэкенд не возьмётся отправлять это сообщение, то и хуй с ним.
-        unable_to_sent = True
         for backend in settings.PINAX_NOTIFICATIONS_BACKENDS.values():
             if backend.can_send(user, notice_type, scoping=scoping):
                 unable_to_sent = False
