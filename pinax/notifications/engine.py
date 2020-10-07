@@ -14,7 +14,7 @@ from django.utils import timezone
 from . import models as notification
 from .conf import settings
 from .lockfile import AlreadyLocked, FileLock, LockTimeout
-from .models import NoticeQueueBatch
+from .models import NoticeQueueBatch, UnableToSentException
 from .signals import emitted_notices
 
 
@@ -57,7 +57,7 @@ def send_all(*args):
             .filter(Q(send_after__isnull=True) | Q(send_after__lte=now))
             .all()
         ):
-            was_sent = False
+            unable_to_sent = was_sent = False
             notices = pickle.loads(base64.b64decode(queued_batch.pickled_data))
             for (ct, ct_id), label, extra_context, sender in notices:
                 try:
@@ -76,10 +76,15 @@ def send_all(*args):
                         ct,
                         ct_id,
                     )
+                except UnableToSentException:
+                    logger.info(
+                        "Don't know how to send  {0} to {1}, drop".format(label, user)
+                    )
+                    unable_to_sent = True
                 except Exception as e:
                     logger.exception('not emitting notice %s: %s', label, e)
                 sent += 1
-            if was_sent:
+            if was_sent or unable_to_sent:
                 queued_batch.delete()
             batches += 1
         emitted_notices.send(

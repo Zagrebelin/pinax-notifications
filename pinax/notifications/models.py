@@ -175,6 +175,10 @@ def get_notification_language(user):
     raise LanguageStoreNotAvailable
 
 
+class UnableToSentException(Exception):
+    pass
+
+
 def send_now(users, label, extra_context=None, sender=None, scoping=None):
     """
     Creates a new notice.
@@ -209,9 +213,11 @@ def send_now(users, label, extra_context=None, sender=None, scoping=None):
         if language is not None:
             # activate the user's language
             activate(language)
-
+        # если ни один бэкенд не возьмётся отправлять это сообщение, то и хуй с ним.
+        unable_to_sent = True
         for backend in settings.PINAX_NOTIFICATIONS_BACKENDS.values():
             if backend.can_send(user, notice_type, scoping=scoping):
+                unable_to_sent = False
                 deliver_result = backend.deliver(
                     user, sender, notice_type, extra_context
                 )
@@ -231,7 +237,9 @@ def send_now(users, label, extra_context=None, sender=None, scoping=None):
 
     # reset environment to original language
     activate(current_language)
-    return sent
+    if unable_to_sent:
+        raise UnableToSentException()
+    return sent or unable_to_sent
 
 
 def send(*args, **kwargs):
