@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-VERSION = "5.1.7"
+VERSION = "5.1.8"
 LONG_DESCRIPTION = """
 .. image:: http://pinaxproject.com/pinax-design/patches/pinax-notifications.svg
     :target: https://pypi.python.org/pypi/pinax-notifications/

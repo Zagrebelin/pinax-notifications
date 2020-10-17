@@ -22,7 +22,7 @@ def load_model(path):
 
 def load_path_attr(path):
     i = path.rfind(".")
-    module, attr = path[:i], path[i + 1:]
+    module, attr = path[:i], path[i + 1 :]
     try:
         mod = importlib.import_module(module)
     except ImportError as e:
@@ -30,7 +30,9 @@ def load_path_attr(path):
     try:
         attr = getattr(mod, attr)
     except AttributeError:
-        raise ImproperlyConfigured("Module '{0}' does not define a '{1}'".format(module, attr))
+        raise ImproperlyConfigured(
+            "Module '{0}' does not define a '{1}'".format(module, attr)
+        )
     return attr
 
 

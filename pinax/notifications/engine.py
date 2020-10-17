@@ -45,7 +45,7 @@ def send_all(*args):
     if lock is None:
         logger.debug("no lock acquired. skipping sending.")
         return
-    batches, sent, sent_actual = 0, 0, 0
+    batches = sent = sent_actual = dont_know = 0
     start_time = time.time()
     now = timezone.now()
 
@@ -62,7 +62,7 @@ def send_all(*args):
             for (ct, ct_id), label, extra_context, sender in notices:
                 try:
                     user = ct.get_object_for_this_type(pk=ct_id)
-                    logger.info("emitting notice {0} to {1}".format(label, user))
+                    logger.debug("emitting notice {0} to {1}".format(label, user))
                     # call this once per user to be atomic and allow for logger.to
                     # accurately show how long each takes.
                     if notification.send_now([user], label, extra_context, sender):
@@ -80,6 +80,7 @@ def send_all(*args):
                     logger.info(
                         "Don't know how to send  {0} to {1}, drop".format(label, user)
                     )
+                    dont_know += 1
                     unable_to_sent = True
                 except Exception as e:
                     logger.exception('not emitting notice %s: %s', label, e)
@@ -113,5 +114,9 @@ def send_all(*args):
 
     _, expired = NoticeQueueBatch.objects.filter(send_till__lt=now).delete()
     expired = expired['pinax_notifications.NoticeQueueBatch']
-    logger.info("{0} batches, {1} sent, {2} expired".format(batches, sent, expired))
-    logger.info("done in {0:.2f} seconds".format(time.time() - start_time))
+    logger.info(
+        "{0} batches, {1} sent, {2} expired, {3} don't know how to send".format(
+            batches, sent, expired, dont_know
+        )
+    )
+    logger.debug("done in {0:.2f} seconds".format(time.time() - start_time))

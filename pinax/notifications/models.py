@@ -179,6 +179,10 @@ class UnableToSentException(Exception):
     pass
 
 
+class DontKnowHowToDeliverException(Exception):
+    pass
+
+
 def send_now(users, label, extra_context=None, sender=None, scoping=None):
     """
     Creates a new notice.
@@ -239,6 +243,47 @@ def send_now(users, label, extra_context=None, sender=None, scoping=None):
     if unable_to_sent:
         raise UnableToSentException()
     return sent or unable_to_sent
+
+
+def send_now_single_user(user, label, extra_context=None, sender=None, scoping=None):
+    notice_type = NoticeType.objects.get(label=label)
+
+    suitable_backends = [
+        backend.can_send(user, notice_type, scoping=scoping)
+        for backend in settings.PINAX_NOTIFICATIONS_BACKENDS.values()
+    ]
+    if not suitable_backends:
+        raise DontKnowHowToDeliverException()
+
+    # get user language for user from language store defined in
+    # NOTIFICATION_LANGUAGE_MODULE setting
+    current_language = get_language()
+    try:
+        language = get_notification_language(user)
+    except LanguageStoreNotAvailable:
+        language = None
+    if language is not None:
+        activate(language)
+
+    # если ни один бэкенд не возьмётся отправлять это сообщение.
+    sent = False
+    for backend in suitable_backends:
+        deliver_result = backend.deliver(user, sender, notice_type, extra_context)
+        if isinstance(deliver_result, Iterable):
+            this_backend_sent, this_backend_error = deliver_result
+        else:
+            this_backend_sent = deliver_result
+            this_backend_error = not deliver_result
+        if this_backend_sent:
+            deliver_counter.labels(backend.get_prometheus_label()).inc()
+            deliver_last_time.labels(backend.get_prometheus_label()).set(time.time())
+        if this_backend_error:
+            deliver_error_counter.labels(backend.get_prometheus_label()).inc()
+        sent = this_backend_sent or sent
+
+    # reset environment to original language
+    activate(current_language)
+    return sent
 
 
 def send(*args, **kwargs):
