@@ -249,8 +249,9 @@ def send_now_single_user(user, label, extra_context=None, sender=None, scoping=N
     notice_type = NoticeType.objects.get(label=label)
 
     suitable_backends = [
-        backend.can_send(user, notice_type, scoping=scoping)
+        backend
         for backend in settings.PINAX_NOTIFICATIONS_BACKENDS.values()
+        if backend.can_send(user, notice_type, scoping=scoping)
     ]
     if not suitable_backends:
         raise DontKnowHowToDeliverException()
