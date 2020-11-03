@@ -113,7 +113,7 @@ def send_all(*args):
         logger.debug("released.")
 
     _, expired = NoticeQueueBatch.objects.filter(send_till__lt=now).delete()
-    expired = expired['pinax_notifications.NoticeQueueBatch']
+    expired = expired.get('pinax_notifications.NoticeQueueBatch', 0)
     logger.info(
         "{0} batches, {1} sent, {2} expired, {3} don't know how to send".format(
             batches, sent, expired, dont_know
